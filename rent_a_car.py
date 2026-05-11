@@ -16,7 +16,7 @@ TOKEN = os.getenv("TOKEN")
 ADMIN_CHAT_ID = os.getenv("CHAT_ID")
 
 # States
-ASK_CAR, ASK_DAYS, CONFIRM, ASK_SCREENSHOT = range(4)
+ASK_PHONE, ASK_CAR, ASK_DAYS, CONFIRM, ASK_SCREENSHOT = range(5)
 
 # Car locations (Google Maps)
 CAR_LOCATIONS = [
@@ -32,13 +32,29 @@ CAR_LOCATIONS = [
 # /start
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "Welcome to our Rent Car Service 🚗\n\nWhich car do you want?"
+        "Hey there 👋\n\nWelcome to Our Rent Car Service 🚗\n\nPlease Enter Your Mobile Number"
     )
-    print(update.effective_user.id)
+    return ASK_PHONE
+
+
+# Step 1: Get phone number
+async def ask_phone(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    phone = update.message.text.strip()
+
+    # Simple validation (10 digits)
+    if not phone.isdigit() or len(phone) != 10:
+        await update.message.reply_text(
+            "❌ Please enter a valid 10-digit mobile number."
+        )
+        return ASK_PHONE
+
+    context.user_data["phone"] = phone
+
+    await update.message.reply_text("Which car do you want?")
     return ASK_CAR
 
 
-# Step 1: Car input
+# Step 2: Car input
 async def ask_car(update: Update, context: ContextTypes.DEFAULT_TYPE):
     car = update.message.text
 
@@ -61,7 +77,7 @@ async def ask_car(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return ConversationHandler.END
 
 
-# Step 2: Days selection
+# Step 3: Days
 async def ask_days(update: Update, context: ContextTypes.DEFAULT_TYPE):
     days = update.message.text
 
@@ -89,7 +105,7 @@ async def ask_days(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return CONFIRM
 
 
-# Step 3: Confirm booking
+# Step 4: Confirm
 async def confirm(update: Update, context: ContextTypes.DEFAULT_TYPE):
     choice = update.message.text
 
@@ -97,24 +113,25 @@ async def confirm(update: Update, context: ContextTypes.DEFAULT_TYPE):
         car = context.user_data.get("car")
         days = context.user_data.get("days")
         price = context.user_data.get("price")
+        phone = context.user_data.get("phone")
 
         user = update.effective_user
 
-        # Ask for screenshot
         await update.message.reply_text(
             f"✅ Booking Confirmed!\n\n"
             f"Please pay ₹{price} to 8787898967 📱\n\n"
             f"Send payment screenshot after payment."
         )
 
-        # Notify admin
+        # ADMIN MESSAGE (UPDATED WITH PHONE)
         await context.bot.send_message(
             chat_id=ADMIN_CHAT_ID,
             text=(
                 f"🚨 New Booking Alert\n\n"
                 f"User: {user.full_name}\n"
                 f"Username: @{user.username}\n"
-                f"User ID: {user.id}\n\n"
+                f"User ID: {user.id}\n"
+                f"Mobile: {phone}\n\n"
                 f"Car: {car}\n"
                 f"Duration: {days}\n"
                 f"Amount: ₹{price}"
@@ -128,48 +145,25 @@ async def confirm(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return ConversationHandler.END
 
 
-# Step 4: Handle screenshot
+# Step 5: Screenshot → send location
 async def handle_screenshot(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    chat_id = update.effective_chat.id
-
-    # If user sends ANY photo
     if update.message.photo:
-        user = update.effective_user
-
-        # Random car location
         location_name, map_link = random.choice(CAR_LOCATIONS)
 
-        # Send final response to user
-        await context.bot.send_message(
-            chat_id=chat_id,
-            text=(
-                f"✅ Payment received!\n\n"
-                f"🚗 Your car is ready:\n"
-                f"{location_name}\n"
-                f"{map_link}\n\n"
-                f"📞 Contact: 8787898967\n"
-                f"Drive safe 🙌"
-            )
-        )
-
-        # Notify admin (optional but useful)
-        await context.bot.send_message(
-            chat_id=ADMIN_CHAT_ID,
-            text=(
-                f"📸 Screenshot Received\n\n"
-                f"User: {user.full_name}\n"
-                f"@{user.username}\n"
-                f"User ID: {user.id}"
-            )
+        await update.message.reply_text(
+            f"✅ Payment received!\n\n"
+            f"🚗 Your car is ready:\n"
+            f"{location_name}\n"
+            f"{map_link}\n\n"
+            f"📞 Contact: 8787898967\n"
+            f"Drive safe 🙌"
         )
 
         return ConversationHandler.END
 
-    # If NOT photo
     else:
-        await context.bot.send_message(
-            chat_id=chat_id,
-            text="📸 Please send any payment screenshot to continue."
+        await update.message.reply_text(
+            "📸 Please send any payment screenshot to continue."
         )
         return ASK_SCREENSHOT
 
@@ -181,12 +175,13 @@ def main():
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler("start", start)],
         states={
+            ASK_PHONE: [MessageHandler(filters.TEXT & ~filters.COMMAND, ask_phone)],
             ASK_CAR: [MessageHandler(filters.TEXT & ~filters.COMMAND, ask_car)],
             ASK_DAYS: [MessageHandler(filters.TEXT & ~filters.COMMAND, ask_days)],
             CONFIRM: [MessageHandler(filters.TEXT & ~filters.COMMAND, confirm)],
             ASK_SCREENSHOT: [
-                MessageHandler(filters.PHOTO, handle_screenshot),
-                MessageHandler(~filters.PHOTO, handle_screenshot),
+                MessageHandler(filters.PHOTO | filters.Document.IMAGE, handle_screenshot),
+                MessageHandler(~(filters.PHOTO | filters.Document.IMAGE), handle_screenshot),
             ],
         },
         fallbacks=[],
@@ -200,4 +195,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-    
