@@ -46,6 +46,19 @@ async def ask_phone(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(
             "❌ Please enter a valid 10-digit mobile number."
         )
+        user = update.effective_user
+        username = f"@{user.username}" if user.username else "No username"
+        # ADMIN MESSAGE (UPDATED WITH PHONE)
+        await context.bot.send_message(
+        chat_id=ADMIN_CHAT_ID,
+        text=(
+            f"🚨 Invalid Phone Number\n\n"
+            f"User: {user.full_name}\n"
+            f"Username: @{username}\n"
+            f"User ID: {user.id}\n\n"
+            f"Entered Value: {phone}"
+        ),
+    )
         return ASK_PHONE
 
     context.user_data["phone"] = phone
@@ -74,7 +87,23 @@ async def ask_car(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     else:
         await update.message.reply_text("Sorry, not available ❌")
-        return ConversationHandler.END
+        context.user_data["Error Cause"] = car
+        user = update.effective_user
+        username = f"@{user.username}" if user.username else "No username"
+        phone = context.user_data.get("phone")
+        # ADMIN MESSAGE (UPDATED WITH PHONE)
+        await context.bot.send_message(
+        chat_id=ADMIN_CHAT_ID,
+        text=(
+            f"🚨 Invalid Car Input\n\n"
+            f"User: {user.full_name}\n"
+            f"Username: @{username}\n"
+            f"User ID: {user.id}\n"
+            f"Mobile: {phone}\n\n"
+            f"Entered Value: {car}"
+        ),
+    )
+        return ASK_CAR
 
 
 # Step 3: Days
@@ -116,6 +145,7 @@ async def confirm(update: Update, context: ContextTypes.DEFAULT_TYPE):
         phone = context.user_data.get("phone")
 
         user = update.effective_user
+        username = f"@{user.username}" if user.username else "No username"
 
         await update.message.reply_text(
             f"✅ Booking Confirmed!\n\n"
@@ -129,7 +159,7 @@ async def confirm(update: Update, context: ContextTypes.DEFAULT_TYPE):
             text=(
                 f"🚨 New Booking Alert\n\n"
                 f"User: {user.full_name}\n"
-                f"Username: @{user.username}\n"
+                f"Username: @{username}\n"
                 f"User ID: {user.id}\n"
                 f"Mobile: {phone}\n\n"
                 f"Car: {car}\n"
