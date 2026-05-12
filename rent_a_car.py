@@ -185,7 +185,8 @@ async def handle_screenshot(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"🚗 Your car is ready:\n"
             f"{location_name}\n"
             f"{map_link}\n\n"
-            f"Drive safe 🙌\n\n\n"
+            f"Drive safe 🙌\n"
+            f"Don't Forget to clear history\n"
             f"To Restart click on /start"
         )
 
