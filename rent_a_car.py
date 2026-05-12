@@ -188,6 +188,7 @@ async def handle_screenshot(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"📞 Contact: 8787898967\n"
             f"Drive safe 🙌"
         )
+        print("/start")
 
         return ConversationHandler.END
 
