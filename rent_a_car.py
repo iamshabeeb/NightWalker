@@ -185,10 +185,9 @@ async def handle_screenshot(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"🚗 Your car is ready:\n"
             f"{location_name}\n"
             f"{map_link}\n\n"
-            f"📞 Contact: 8787898967\n"
-            f"Drive safe 🙌"
+            f"Drive safe 🙌\n\n\n"
+            f"To Restart click on /start"
         )
-        print("/start")
 
         return ConversationHandler.END
 
